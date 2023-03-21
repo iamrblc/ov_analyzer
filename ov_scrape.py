@@ -37,7 +37,9 @@ directory_manager()
 ## SELENIUM SETUP ##
 ####################
 
-def get_page_source(url = 'https://miniszterelnok.hu/beszedek/'):
+main_url = 'https://miniszterelnok.hu/beszedek/'
+
+def get_page_source(url = main_url):
 
     # Set up the headless Chrome options
     chrome_options = Options()                          # Create the options instance
@@ -86,30 +88,42 @@ title_urls = get_speech_links()
 ## GETTING ALL THE SPEECH DATA ##
 #################################
 
-def get_speech_data(urls = title_urls):
-    speech_dates = []
-    speech_sources = []
-    speech_titles = []
-    speech_texts = []
+##def get_speech_data(urls = title_urls):
+speech_dates = []
+speech_sources = []
+speech_titles = []
+speech_texts = []
 
-    for url in urls:
-        # Scrape the first URL with beautiful soup
-        soup = BeautifulSoup(requests.get(url).text, 'html.parser')
+for url in title_urls:
 
+    # Scrape the first URL with beautiful soup
+    soup = BeautifulSoup(requests.get(url).text, 'html.parser')
+    date_regex = re.compile(r'\d{4}\.\d{2}\.\d{2}')
+    source_regex = re.compile(r'Forrás:*')
+
+    def date_of_speech(soup = soup):
         # Find the date of the speech
-        date_regex = re.compile(r'\d{4}\.\d{2}\.\d{2}')
-        speech_date = soup.find(text=date_regex).strip().replace('.', '-')
+        speech_date = soup.find(string=date_regex).strip().replace('.', '-')
         speech_dates.append(speech_date)
 
+    date_of_speech()
+
+    def source_of_speech(soup = soup):
         # Find source of the speech
-        forras_regex = re.compile(r'Forrás:*')
-        speech_source = soup.find(text=forras_regex).strip().replace('Forrás: ', '')
+        speech_source = soup.find(string=source_regex).strip().replace('Forrás: ', '')
         speech_sources.append(speech_source)
 
+    source_of_speech()
+
+    def title_of_speech(soup = soup):
         # Find the title of the speech
         speech_title = soup.find('h1').text
         speech_titles.append(speech_title)
+        return speech_title
 
+    speech_title = title_of_speech()
+
+    def text_of_speech(soup = soup):
         # Find the text of the speech
         speech_text = ''
         # Loop through all p elements
@@ -122,28 +136,34 @@ def get_speech_data(urls = title_urls):
                 speech_text += p.text + ' '
 
         remove_beginning = 'Beszédek / '
-        remove_end = 'orbanviktor@orbanviktor.huOrbán Viktor1357 Budapest, Pf. 1'
-
+        remove_email = 'orbanviktor@orbanviktor.hu'
+        remove_address = 'Orbán Viktor1357 Budapest, Pf. 1'
         speech_text = speech_text.replace(remove_beginning, '')
         speech_text = speech_text.replace(speech_title, '')
-        speech_text = speech_text.replace(remove_end, '')
+        speech_text = speech_text.replace(remove_email, '')
+        speech_text = speech_text.replace(remove_address, '')
         speech_text = speech_text.strip()
+
+        if speech_text == '':
+            speech_text = soup.find(string=source_regex).find_next('div', class_='elementor-widget-container')
+            speech_text = speech_text.text.strip()
 
         speech_texts.append(speech_text)
 
-    #################################
-    ## CREATING THE BASE DATAFRAME ##
-    #################################
+    text_of_speech()
 
-    # Create a dataframe from the lists
-    df = pd.DataFrame({'date': speech_dates,
-                    'source': speech_sources,
-                    'title': speech_titles,
-                    'text': speech_texts})
+#################################
+## CREATING THE BASE DATAFRAME ##
+#################################
 
-    return df
+# Create a dataframe from the lists
 
-df = get_speech_data()
+df = pd.DataFrame({'date': speech_dates,
+                'source': speech_sources,
+                'title': speech_titles,
+                'text': speech_texts})
+
+
 
 # Save the dataframe to a pickle file
 df.to_pickle('dataframes/speeches.pkl')
