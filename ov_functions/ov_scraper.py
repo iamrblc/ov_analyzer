@@ -55,7 +55,7 @@ def get_speech_links(page_source):
     soup_main = BeautifulSoup(page_source, 'html.parser')
 
     # Find all the title links on the main page and extract their URLs
-    title_links = soup_main.select('h3 a')
+    title_links = soup_main.select('h3 a, #headnews-id a')
     title_urls = list(set([link['href'] for link in title_links]))  # For some reason there are duplicates
 
     return title_urls
