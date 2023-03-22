@@ -28,7 +28,6 @@ directory_manager()
 ####################
 
 main_url = 'https://miniszterelnok.hu/beszedek/'
-
 page_source = get_page_source(main_url)
 
 ################################
@@ -69,4 +68,4 @@ df = pd.DataFrame({'date': speech_dates,
                 'text': speech_texts})
 
 # Save the dataframe to a pickle file
-df.to_pickle('dataframes/speeches.pkl')
+df.to_pickle('dataframes/speeches_raw_df.pkl')
